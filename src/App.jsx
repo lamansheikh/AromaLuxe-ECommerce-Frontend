@@ -14,13 +14,14 @@ import Register from './components/auth/Register'
 import Login from './components/Auth/Login'
 import Checkout from './components/Pages/checkout'
 import CartSidebar from './components/HeaderFooter/CartSidebar'
-
+import { CartProvider } from "./context/CartContext";
 function App() {
  
 
   return (
     <>
 
+      <CartProvider>
       <BrowserRouter>
       <Header/>
       <Routes>
@@ -36,7 +37,7 @@ function App() {
       <CartSidebar />
       <Footer/>
       </BrowserRouter>
-
+        </CartProvider>
 
      
       

@@ -7,31 +7,8 @@ import React, {
 
 const CartContext = createContext();
 
-export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(() => {
-    const savedCart = localStorage.getItem("cartItems");
 
-    if (!savedCart) {
-      return [];
-    }
-
-    try {
-      const parsedCart = JSON.parse(savedCart);
-
-      return parsedCart.map((item) => ({
-        ...item,
-        price: getNumericPrice(item.price),
-        quantity: Number(item.quantity) || 1,
-      }));
-    } catch (error) {
-      console.error("Error loading cart:", error);
-      return [];
-    }
-  });
-
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // Convert price into a number
+// Convert price into a number
 const getNumericPrice = (price) => {
   if (typeof price === "number") {
     return price;
@@ -54,7 +31,40 @@ const getNumericPrice = (price) => {
 };
 
 
-  // Save cart whenever it changes
+export const CartProvider = ({ children }) => {
+
+  // Load cart from localStorage
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem("cartItems");
+
+      if (!savedCart) {
+        return [];
+      }
+
+      const parsedCart = JSON.parse(savedCart);
+
+      if (!Array.isArray(parsedCart)) {
+        return [];
+      }
+
+      return parsedCart.map((item) => ({
+        ...item,
+        price: getNumericPrice(item.price),
+        quantity: Number(item.quantity) || 1,
+      }));
+
+    } catch (error) {
+      console.error("Error loading cart:", error);
+      return [];
+    }
+  });
+
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+
+  // Save cart to localStorage whenever cart changes
   useEffect(() => {
     localStorage.setItem(
       "cartItems",
@@ -62,25 +72,31 @@ const getNumericPrice = (price) => {
     );
   }, [cartItems]);
 
+
   // Add product
   const addToCart = (product) => {
     setCartItems((previousItems) => {
+
       const existingProduct = previousItems.find(
         (item) => item.id === product.id
       );
 
+
+      // Product already exists
       if (existingProduct) {
         return previousItems.map((item) =>
           item.id === product.id
             ? {
                 ...item,
-                price: getNumericPrice(item.price),
-                quantity: Number(item.quantity) + 1,
+                quantity:
+                  Number(item.quantity || 0) + 1,
               }
             : item
         );
       }
 
+
+      // New product
       return [
         ...previousItems,
         {
@@ -91,8 +107,11 @@ const getNumericPrice = (price) => {
       ];
     });
 
+
+    // Open sidebar
     setIsCartOpen(true);
   };
+
 
   // Increase quantity
   const increaseQuantity = (id) => {
@@ -101,13 +120,14 @@ const getNumericPrice = (price) => {
         item.id === id
           ? {
               ...item,
-              price: getNumericPrice(item.price),
-              quantity: Number(item.quantity) + 1,
+              quantity:
+                Number(item.quantity || 0) + 1,
             }
           : item
       )
     );
   };
+
 
   // Decrease quantity
   const decreaseQuantity = (id) => {
@@ -117,8 +137,8 @@ const getNumericPrice = (price) => {
           item.id === id
             ? {
                 ...item,
-                price: getNumericPrice(item.price),
-                quantity: Number(item.quantity) - 1,
+                quantity:
+                  Number(item.quantity || 0) - 1,
               }
             : item
         )
@@ -126,40 +146,48 @@ const getNumericPrice = (price) => {
     );
   };
 
-  // Delete product
+
+  // Remove product
   const removeFromCart = (id) => {
     setCartItems((previousItems) =>
-      previousItems.filter((item) => item.id !== id)
+      previousItems.filter(
+        (item) => item.id !== id
+      )
     );
   };
 
-  // Number displayed on cart icon
+
+  // Total quantity
   const cartCount = cartItems.reduce(
     (total, item) =>
-      total + (Number(item.quantity) || 0),
+      total + Number(item.quantity || 0),
     0
   );
+
 
   // Total price
   const cartTotal = cartItems.reduce(
     (total, item) => {
-      const numericPrice = getNumericPrice(item.price);
-      const quantity = Number(item.quantity) || 0;
+      const price = getNumericPrice(item.price);
+      const quantity = Number(item.quantity || 0);
 
-      return total + numericPrice * quantity;
+      return total + price * quantity;
     },
     0
   );
+
 
   // Open cart
   const openCart = () => {
     setIsCartOpen(true);
   };
 
+
   // Close cart
   const closeCart = () => {
     setIsCartOpen(false);
   };
+
 
   return (
     <CartContext.Provider
@@ -181,6 +209,15 @@ const getNumericPrice = (price) => {
   );
 };
 
+
 export const useCart = () => {
-  return useContext(CartContext);
+  const context = useContext(CartContext);
+
+  if (!context) {
+    throw new Error(
+      "useCart must be used inside CartProvider"
+    );
+  }
+
+  return context;
 };

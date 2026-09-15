@@ -1,92 +1,71 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./Home.css";
 import { useCart } from "../../context/CartContext";
-
 
 function Home() {
   const { addToCart } = useCart();
 
-  const products = [
-    {
-      id: 1,
-      title: "Royal Oud Premium Men's Fragrance Collection",
-      price: "Rs. 2500.00",
-      description:
-        "A rich and luxurious oud fragrance created for a sophisticated and confident personality.",
-      image:
-        "https://www.junaidjamshed.com/cdn/shop/files/gold_1_02e43d2c-4eee-4278-acd5-55fd72237af1.jpg?v=1776978926&width=1100",
-    },
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    {
-      id: 2,
-      title: "Midnight Essence Luxury Perfume For Men",
-      price: "Rs. 2500.00",
-      description:
-        "A mysterious and elegant fragrance with deep notes designed for evening occasions.",
-      image:
-        "https://www.junaidjamshed.com/cdn/shop/files/502_2__3_e4992cb8-8698-4391-b162-a2f2832d6226.jpg?v=1776978926&width=1130",
-    },
+  useEffect(() => {
+    fetch("https://inside-dev.com/api/fragrance")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
 
-    {
-      id: 3,
-      title: "Bold Signature Long Lasting Men's Scent",
-      price: "Rs. 2500.00",
-      description:
-        "A bold signature scent with a long-lasting aroma for everyday confidence.",
-      image:
-        "https://picsum.photos/400/500?random=13",
-    },
+        return response.json();
+      })
+      .then((data) => {
+        // Supports APIs that return products directly
+        // or inside a "data" property.
+        const productList = Array.isArray(data)
+          ? data
+          : data.data || data.products || [];
 
-    {
-      id: 4,
-      title: "Elite Noir Exclusive Fragrance For Men",
-      price: "Rs. 2500.00",
-      description:
-        "An exclusive masculine fragrance combining elegance, warmth and modern sophistication.",
-      image:
-        "https://picsum.photos/400/500?random=14",
-    },
+        setProducts(productList);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("API Error:", err);
+        setError("Unable to load products.");
+        setLoading(false);
+      });
+  }, []);
 
-    {
-      id: 5,
-      title: "Blooming Rose Elegant Women's Perfume",
-      price: "Rs. 2500.00",
-      description:
-        "A graceful floral fragrance inspired by fresh blooming roses and feminine elegance.",
-      image:
-        "https://picsum.photos/400/500?random=15",
-    },
+  const formatPrice = (price) => {
+    const number = Number(price);
 
-    {
-      id: 6,
-      title: "Golden Petals Luxury Fragrance For Women",
-      price: "Rs. 2500.00",
-      description:
-        "A luxurious floral scent with warm golden notes and a beautifully elegant finish.",
-      image:
-        "https://picsum.photos/400/500?random=16",
-    },
+    if (isNaN(number)) {
+      return `Rs. ${price}`;
+    }
 
-    {
-      id: 7,
-      title: "Velvet Blossom Premium Women's Collection",
-      price: "Rs. 2500.00",
-      description:
-        "A soft and sophisticated fragrance collection featuring delicate floral notes.",
-      image:
-        "https://picsum.photos/400/500?random=17",
-    },
+    return `Rs. ${number.toLocaleString("en-PK")}`;
+  };
 
-    {
-      id: 8,
-      title: "Crystal Bloom Long Lasting Women's Scent",
-      price: "Rs. 2500.00",
-      description:
-        "A refreshing and radiant women's fragrance designed to leave a memorable impression.",
-      image:
-        "https://picsum.photos/400/500?random=18",
-    },
-  ];
+  const renderStars = (rating) => {
+    const roundedRating = Math.round(Number(rating) || 0);
+
+    return Array.from({ length: 5 }, (_, index) => (
+      <i
+        key={index}
+        className={
+          index < roundedRating
+            ? "fa-solid fa-star"
+            : "fa-regular fa-star"
+        }
+      ></i>
+    ));
+  };
+
+  const getDescription = (description) => {
+    if (!description) return "";
+
+    // CSS will limit this to exactly 2 lines visually.
+    return description;
+  };
 
   return (
     <>
@@ -188,54 +167,109 @@ function Home() {
             Featured Products
           </h2>
 
-          <div className="row g-4">
-            {products.map((product) => (
+          {loading && (
+            <div className="text-center py-5">
               <div
-                className="col-lg-3 col-md-6"
-                key={product.id}
+                className="spinner-border"
+                role="status"
               >
-                <div className="product-card">
-                  <div className="image-wrapper">
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="img-fluid"
-                    />
-
-                    <button className="wishlist-btn">
-                      <i className="fa-regular fa-heart"></i>
-                    </button>
-                  </div>
-
-                  <div className="product-info">
-                    <h5>{product.title}</h5>
-
-                    <div className="rating">
-                      <i className="fa-solid fa-star"></i>
-                      <i className="fa-solid fa-star"></i>
-                      <i className="fa-solid fa-star"></i>
-                      <i className="fa-solid fa-star"></i>
-                      <i className="fa-solid fa-star"></i>
-
-                      <span>(5.0)</span>
-                    </div>
-
-                    <div className="price">
-                      {product.price}
-                    </div>
-
-                    <button
-                      className="cart-btn"
-                      onClick={() => addToCart(product)}
-                    >
-                      <i className="fa-solid fa-cart-shopping me-2"></i>
-                      Add To Cart
-                    </button>
-                  </div>
-                </div>
+                <span className="visually-hidden">
+                  Loading...
+                </span>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="alert alert-danger text-center">
+              {error}
+            </div>
+          )}
+
+          {!loading && !error && products.length === 0 && (
+            <p className="text-center">
+              No products found.
+            </p>
+          )}
+
+          {!loading && !error && products.length > 0 && (
+            <div className="row g-4">
+              {products.slice(0, 4).map((product) => {
+                const rating = Number(
+                  product.rating || product.rate || 0
+                );
+
+                const ratingCount =
+                  product.rating_count ||
+                  product.review_count ||
+                  product.reviews_count ||
+                  product.count ||
+                  0;
+
+                return (
+                  <div
+                    className="col-lg-3 col-md-6"
+                    key={product.id}
+                  >
+                    <div className="product-card">
+                      <div className="image-wrapper">
+                        <img
+                          src={
+                            product.image ||
+                            product.image_url ||
+                            product.thumbnail
+                          }
+                          alt={product.title || product.name}
+                          className="img-fluid"
+                        />
+
+                        <button
+                          className="wishlist-btn"
+                          type="button"
+                        >
+                          <i className="fa-regular fa-heart"></i>
+                        </button>
+                      </div>
+
+                      <div className="product-info">
+                        <h5>
+                          {(product.title || product.name || "").toUpperCase()}
+                        </h5>
+
+                        <p className="product-description">
+                          {getDescription(product.description)}
+                        </p>
+
+                        <div className="rating">
+                          {renderStars(product.rating.rate)}
+
+                          <span>
+                            ({product.rating.count})
+                          </span>
+                        </div>
+
+                        <div className="price">
+                          {formatPrice(
+                            product.price ||
+                              product.sale_price ||
+                              product.amount
+                          )}
+                        </div>
+
+                        <button
+                          className="cart-btn"
+                          onClick={() => addToCart(product)}
+                        >
+                          <i className="fa-solid fa-cart-shopping me-2"></i>
+                          Add To Cart
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
     </>
