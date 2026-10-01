@@ -1,7 +1,23 @@
 import React from "react";
 import "./Checkout.css";
+import  { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Checkout = () => {
+
+ const navigate = useNavigate();
+
+  useEffect(() => {
+    const cartItems = JSON.parse(localStorage.getItem("cartItems")) || [];
+
+    if (cartItems.length === 0) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+
+
+
   return (
     <main className="checkout-page">
       <div className="container py-5">
